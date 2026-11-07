@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Автокадр</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@600&display=swap">
+<style>
+/* Мобильное приложение: шапка, контент шагом, нижняя панель вкладок; съёмка и редактор открываются поверх на весь экран */
+:root{
+  --bg:#EDEFEC; --surface:#FFFFFF; --sunk:#E3E6E2; --ink:#15191C; --muted:#5B656A; --line:#D3D8D5;
+  --accent:#F2B705; --accent-ink:#1C1500; --ok:#1E8448; --warn:#A86200; --bad:#BE3328;
+  --display:"Unbounded", "Onest", system-ui, sans-serif;
+  --body:"Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1214; --surface:#191D20; --sunk:#22272A; --ink:#ECEFED; --muted:#99A2A6; --line:#2C3236;
+  --accent:#F5C12E; --accent-ink:#1C1500; --ok:#3DB374; --warn:#E5A33C; --bad:#EE6A5D; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1214; --surface:#191D20; --sunk:#22272A; --ink:#ECEFED; --muted:#99A2A6; --line:#2C3236;
+  --accent:#F5C12E; --accent-ink:#1C1500; --ok:#3DB374; --warn:#E5A33C; --bad:#EE6A5D; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:720px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
+.logo{font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:.01em;display:flex;align-items:center;gap:8px}
+.logo i{display:inline-block;width:22px;height:14px;border-radius:3px;background:var(--accent);border:2px solid var(--ink)}
+.prog{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.prog b{color:var(--ink)}
+main{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+main .wrap{padding-block:18px 24px;display:flex;flex-direction:column;gap:18px}
+h1,h2{font-family:var(--display);font-weight:600;letter-spacing:-.01em;text-wrap:balance;margin:0}
+h1{font-size:21px;line-height:1.25}
+h2{font-size:15px}
+p{margin:0}
+.lead{color:var(--muted);max-width:60ch}
+.note{font-size:13px;color:var(--muted)}
+/* tabs */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding-block:6px}
+nav.tabs button{border:0;background:none;padding:8px 4px;border-radius:10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted)}
+nav.tabs button .n{font-family:var(--display);font-size:13px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--line)}
+nav.tabs button[aria-current="true"]{color:var(--ink)}
+nav.tabs button[aria-current="true"] .n{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 16px;font-weight:600;min-height:46px;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:none}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.wide{width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row > .btn{flex:1 1 140px}
+.seg{display:flex;background:var(--sunk);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;border-radius:9px;padding:8px 6px;font-size:14px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+/* shots grid */
+.grouphead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:560px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.shot{border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r);padding:0;overflow:hidden;text-align:left;display:flex;flex-direction:column}
+.shot .pic{aspect-ratio:4/3;background:var(--sunk);display:grid;place-items:center;position:relative;color:var(--muted)}
+.shot .pic svg{width:86%;height:auto}
+.shot .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shot .cap{padding:8px 10px 10px;display:flex;gap:8px;align-items:flex-start}
+.shot .num{font-family:var(--display);font-size:11px;min-width:22px;height:22px;border-radius:6px;display:grid;place-items:center;background:var(--sunk);color:var(--muted);flex:none}
+.shot.done .num{background:var(--ok);color:#fff}
+.shot .nm{font-size:13.5px;font-weight:500;line-height:1.3}
+.shot .badge{position:absolute;top:8px;left:8px;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:700;padding:3px 7px;border-radius:6px;letter-spacing:.02em;z-index:1}
+.shot .flag{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;background:var(--warn);z-index:1;box-shadow:0 0 0 2px var(--surface)}
+/* card + form */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px}
+.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fields .full{grid-column:1/-1}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--muted);min-width:0}
+label.f input,label.f select,label.f textarea{width:100%;border:1.5px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 11px;font-size:16px;color:var(--ink);min-width:0}
+label.f textarea{min-height:96px;resize:vertical;line-height:1.45}
+.checks{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;font-size:14px;background:var(--bg);user-select:none}
+.chip input{accent-color:var(--accent);margin:0}
+.chip:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--surface))}
+.example{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--warn)}
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:20;background:#0B0D0E;color:#F1F3F2;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet .bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
+.sheet .bar .t{font-weight:600;font-size:15px;text-align:center;flex:1;min-width:0}
+.sheet .x{border:0;background:rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:8px 12px;font-weight:600}
+.stage{flex:1;min-height:0;display:grid;place-items:center;padding:0 max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px));position:relative}
+.frame{position:relative;width:100%;max-height:100%;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#1A1E20;max-width:100%}
+.frame > img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.frame .guide{position:absolute;inset:6%;color:#fff;pointer-events:none}
+.frame .guide svg{width:100%;height:100%;filter:drop-shadow(0 0 2px rgba(0,0,0,.9))}
+.frame.empty .guide{color:var(--accent)}
+.thirds{position:absolute;inset:0;pointer-events:none;background:
+ linear-gradient(to right,transparent calc(33.33% - .5px),rgba(255,255,255,.18) calc(33.33% - .5px),rgba(255,255,255,.18) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.18) calc(66.66% - .5px),rgba(255,255,255,.18) calc(66.66% + .5px),transparent calc(66.66% + .5px)),
+ linear-gradient(to bottom,transparent calc(33.33% - .5px),rgba(255,255,255,.18) calc(33.33% - .5px),rgba(255,255,255,.18) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.18) calc(66.66% - .5px),rgba(255,255,255,.18) calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+.panel{padding:12px max(16px,env(safe-area-inset-right,0px)) 14px max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px;max-width:720px;width:100%;margin:0 auto}
+.tip{color:#C7CDCB;font-size:14px}
+.qc{display:flex;flex-direction:column;gap:6px;font-size:14px}
+.qc div{display:flex;gap:8px;align-items:flex-start}
+.qc .d{width:8px;height:8px;border-radius:50%;margin-top:7px;flex:none}
+.sheet .btn{background:#22272A;border-color:#363C40;color:#F1F3F2}
+.sheet .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.sheet .seg{background:#22272A}
+.sheet .seg button{color:#A9B1B4}
+.sheet .seg button[aria-pressed="true"]{background:#3A4145;color:#fff}
+.sheet .lbl{font-size:12px;color:#A9B1B4;letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.filebtn{position:relative;overflow:hidden}
+.filebtn input{position:absolute;inset:0;opacity:0;font-size:0;cursor:pointer}
+.platebox{position:absolute;border:2px solid var(--accent);border-radius:4px;background:rgba(242,183,5,.12);touch-action:none}
+.platebox .h{position:absolute;right:-12px;bottom:-12px;width:24px;height:24px;border-radius:50%;background:var(--accent);border:2px solid #0B0D0E}
+.busy{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.35);font-size:14px;font-weight:600}
+/* photos list */
+.plist{display:flex;flex-direction:column;gap:10px}
+.pitem{display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px;text-align:left}
+.pitem img{width:112px;aspect-ratio:4/3;object-fit:cover;border-radius:9px;background:var(--sunk)}
+.pitem .meta{display:flex;flex-direction:column;gap:3px;min-width:0}
+.pitem .tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:11.5px;font-weight:600;border-radius:6px;padding:2px 7px;background:var(--sunk);color:var(--muted)}
+.tag.y{background:var(--accent);color:var(--accent-ink)}
+.empty{border:1.5px dashed var(--line);border-radius:var(--r);padding:22px 16px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:12px;align-items:center}
+/* text */
+.out{width:100%;min-height:300px;border:1.5px solid var(--line);background:var(--bg);border-radius:12px;padding:12px;font-size:16px;line-height:1.5;resize:vertical}
+.warns{display:flex;flex-direction:column;gap:8px}
+.warnline{font-size:13.5px;color:var(--warn)}
+.count{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+#toast{position:fixed;left:50%;bottom:calc(92px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;z-index:40;max-width:calc(100% - 32px);text-align:center}
+@media (prefers-reduced-motion:no-preference){.shot,.pitem{transition:border-color .15s}}
+</style>
+
+<header class="top"><div class="wrap">
+  <div class="logo"><i aria-hidden="true"></i>Автокадр</div>
+  <div class="prog" id="prog"></div>
+</div></header>
+
+<main>
+  <!-- 1. Машина -->
+  <section id="v-car" class="wrap" hidden>
+    <div>
+      <h1>Ваша машина</h1>
+      <p class="lead">Из этих данных и ваших слов получится текст объявления. Чем больше конкретики, тем живее текст.</p>
+    </div>
+    <div class="card">
+      <div class="example" id="exampleFlag">Пример. Замените на свои данные</div>
+      <div class="fields">
+        <label class="f">Марка<input id="c_make"></label>
+        <label class="f">Модель<input id="c_model"></label>
+        <label class="f">Год<input id="c_year" inputmode="numeric"></label>
+        <label class="f">Пробег, км<input id="c_km" inputmode="numeric"></label>
+        <label class="f full">Двигатель<input id="c_engine" placeholder="1.6 бензин, 123 л.с."></label>
+        <label class="f">Коробка<select id="c_gear"><option>Автомат</option><option>Механика</option><option>Робот</option><option>Вариатор</option></select></label>
+        <label class="f">Привод<select id="c_drive"><option>Передний</option><option>Задний</option><option>Полный</option></select></label>
+        <label class="f">Кузов<input id="c_body"></label>
+        <label class="f">Цвет<input id="c_color"></label>
+        <label class="f">Владельцев по ПТС<input id="c_owners" inputmode="numeric"></label>
+        <label class="f">Цена, ₽<input id="c_price" inputmode="numeric"></label>
+        <label class="f">Город<input id="c_city"></label>
+        <label class="f">Торг<select id="c_bargain"><option>Небольшой торг у машины</option><option>Без торга</option><option>Торг уместен</option></select></label>
+      </div>
+      <div class="checks" id="c_flags"></div>
+    </div>
+    <div class="card">
+      <h2>Своими словами</h2>
+      <label class="f full">Что делали с машиной, почему продаёте, как ездит. Пишите как говорите, ошибки не страшны.
+        <textarea id="c_story"></textarea></label>
+      <label class="f full">Нюансы, о которых стоит сказать честно
+        <textarea id="c_issues" style="min-height:70px"></textarea></label>
+      <p class="note">Честно названные нюансы экономят время на пустых звонках и снимают вопросы на осмотре.</p>
+    </div>
+    <button class="btn primary wide" data-go="shoot">Дальше: съёмка</button>
+  </section>
+
+  <!-- 2. Съёмка -->
+  <section id="v-shoot" class="wrap">
+    <div>
+      <h1>Съёмка по ракурсам</h1>
+      <p class="lead">Нажмите на ракурс, посмотрите подсказку и снимите. После кадра покажем силуэт поверх фото и проверим резкость и свет.</p>
+    </div>
+    <div class="row">
+      <label class="btn filebtn">Загрузить готовые фото<input type="file" id="bulk" accept="image/*" multiple></label>
+      <button class="btn primary" id="nextShot">Снять следующий</button>
+    </div>
+    <div class="grouphead"><h2>Снаружи</h2><span class="note">8 кадров · держите телефон горизонтально</span></div>
+    <div class="grid" id="g_ext"></div>
+    <div class="grouphead"><h2>Салон и детали</h2><span class="note">6 кадров</span></div>
+    <div class="grid" id="g_int"></div>
+    <p class="note">Лучший свет: пасмурный день или час до заката. Не снимайте в полдень против солнца и под деревьями с пятнами тени.</p>
+  </section>
+
+  <!-- 3. Фото -->
+  <section id="v-photos" class="wrap" hidden>
+    <div>
+      <h1>Обработка</h1>
+      <p class="lead">Только честная коррекция: свет, баланс белого, чёткость. Машина остаётся такой, какая она есть.</p>
+    </div>
+    <div class="card">
+      <div class="lbl" style="font-size:13px;color:var(--muted)">Стиль для всей серии</div>
+      <div class="seg" id="styleSeg">
+        <button data-v="soft">Мягко</button><button data-v="natural">Естественно</button><button data-v="vivid">Ярче</button>
+      </div>
+      <label class="chip" style="align-self:flex-start"><input type="checkbox" id="seriesWB" checked> Единый цвет для всех кадров снаружи</label>
+      <div class="row">
+        <button class="btn" id="platesAll">Найти и скрыть номера</button>
+        <div class="seg" id="plateModeAll" style="flex:1 1 180px">
+          <button data-v="blur">Размыть</button><button data-v="badge">Плашка</button>
+        </div>
+      </div>
+    </div>
+    <div id="plist" class="plist"></div>
+    <div class="card" id="exportCard">
+      <h2>Сохранить</h2>
+      <p class="note">Порядок как у площадок: обложка первой, затем кадры снаружи по кругу, потом салон. Можно также нажать на фото в редакторе и удерживать, чтобы сохранить его в «Фото».</p>
+      <div class="row">
+        <button class="btn primary" id="saveZip">Все фото архивом</button>
+        <button class="btn" id="saveEach">По одному</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Текст -->
+  <section id="v-text" class="wrap" hidden>
+    <div>
+      <h1>Текст объявления</h1>
+      <p class="lead">Заголовок площадки собирают сами из марки и модели, поэтому здесь только описание. Под каждую площадку свой тон.</p>
+    </div>
+    <div class="seg" id="platSeg">
+      <button data-v="avito">Авито</button><button data-v="autoru">Авто.ру</button><button data-v="drom">Дром</button>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="gen">Написать текст</button>
+      <button class="btn" id="regen" hidden>Другой вариант</button>
+    </div>
+    <div class="card">
+      <textarea class="out" id="out" placeholder="Здесь появится текст. Его можно править прямо тут."></textarea>
+      <div class="warns" id="warns"></div>
+      <div class="row" style="align-items:center">
+        <span class="count" id="count"></span>
+        <button class="btn" id="copy" style="flex:0 1 auto">Скопировать</button>
+      </div>
+    </div>
+    <p class="note" id="sampleNote" hidden>Генерация текста недоступна в этом окне. Откройте страницу в claude.ai под своим аккаунтом.</p>
+  </section>
+</main>
+
+<nav class="tabs" aria-label="Шаги"><div class="wrap">
+  <button data-go="car"><span class="n">1</span>Машина</button>
+  <button data-go="shoot"><span class="n">2</span>Съёмка</button>
+  <button data-go="photos"><span class="n">3</span>Фото</button>
+  <button data-go="text"><span class="n">4</span>Текст</button>
+</div></nav>
+
+<!-- Съёмка одного ракурса -->
+<div class="sheet" id="shotSheet" hidden>
+  <div class="bar"><button class="x" id="shotClose">Закрыть</button><div class="t" id="shotTitle"></div><span style="width:72px"></span></div>
+  <div class="stage"><div class="frame empty" id="shotFrame"><div class="thirds"></div><div class="guide" id="shotGuide"></div></div></div>
+  <div class="panel">
+    <p class="tip" id="shotTip"></p>
+    <div class="qc" id="shotQC" hidden></div>
+    <div class="row" id="shotBefore">
+      <label class="btn primary filebtn">Открыть камеру<input type="file" accept="image/*" capture="environment" id="camIn"></label>
+      <label class="btn filebtn">Из галереи<input type="file" accept="image/*" id="galIn"></label>
+    </div>
+    <div class="row" id="shotAfter" hidden>
+      <label class="btn filebtn">Переснять<input type="file" accept="image/*" capture="environment" id="camIn2"></label>
+      <button class="btn" id="toggleGuide">Силуэт: вкл</button>
+      <button class="btn primary" id="shotNext">Следующий ракурс</button>
+    </div>
+  </div>
+</div>
+
+<!-- Редактор фото -->
+<div class="sheet" id="edSheet" hidden>
+  <div class="bar"><button class="x" id="edClose">Готово</button><div class="t" id="edTitle"></div><button class="x" id="edOrig">Оригинал</button></div>
+  <div class="stage"><div class="frame" id="edFrame"><img id="edImg" alt=""><div id="plateLayer" style="position:absolute;inset:0" hidden></div><div class="busy" id="edBusy" hidden>Обрабатываю…</div></div></div>
+  <div class="panel">
+    <div class="lbl">Обработка</div>
+    <div class="seg" id="edStyle"><button data-v="soft">Мягко</button><button data-v="natural">Естественно</button><button data-v="vivid">Ярче</button></div>
+    <div class="lbl">Номер</div>
+    <div class="seg" id="edPlate"><button data-v="none">Оставить</button><button data-v="blur">Размыть</button><button data-v="badge">Плашка</button></div>
+    <div class="row">
+      <button class="btn" id="edFind">Найти номер</button>
+      <button class="btn" id="edCover">Сделать обложкой</button>
+    </div>
+    <p class="tip" id="edHint" style="font-size:13px"></p>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+
+<script>
+(() => {
+/* ---------- силуэты ---------- */
+const SV = {
+  side:`<path d="M28 150C26 128 34 118 58 113L118 104C140 80 168 66 200 64H262C292 66 318 84 340 104L366 110C378 113 382 124 380 150Z"/><path d="M136 104C152 86 172 76 200 75H258C280 76 300 88 316 104Z"/><path d="M226 75V104"/><circle cx="105" cy="150" r="28"/><circle cx="305" cy="150" r="28"/><path d="M10 182H390" stroke-dasharray="6 8" stroke-width="2"/>`,
+  front:`<path d="M90 165V120C92 106 104 100 120 98L140 70C146 60 156 56 170 56H230C244 56 254 60 260 70L280 98C296 100 308 106 310 120V165Z"/><path d="M146 96L158 68H242L254 96Z"/><path d="M104 116H154V128H104ZM246 116H296V128H246Z"/><path d="M170 132H230V146H170Z"/><path d="M178 150H222V160H178Z"/><path d="M92 165H122V181H92ZM278 165H308V181H278Z"/><path d="M120 96L100 90V104ZM280 96L300 90V104Z"/><path d="M10 182H390" stroke-dasharray="6 8" stroke-width="2"/>`,
+  rear:`<path d="M90 165V118C92 106 104 100 120 98L142 66C148 58 158 56 170 56H230C242 56 252 58 258 66L280 98C296 100 308 106 310 118V165Z"/><path d="M150 94L160 68H240L250 94Z"/><path d="M98 112H150V124H98ZM250 112H302V124H250Z"/><path d="M176 132H224V144H176Z"/><path d="M92 165H122V181H92ZM278 165H308V181H278Z"/><path d="M10 182H390" stroke-dasharray="6 8" stroke-width="2"/>`,
+  q:`<path d="M40 158V128C42 116 52 110 66 108L130 100C150 76 178 62 212 60L282 62C310 66 334 84 352 104L368 112C378 116 380 128 378 156L130 166Z"/><path d="M130 100V166"/><path d="M150 100C166 82 186 72 212 71L276 72C300 76 318 90 334 104Z"/><path d="M50 118L120 112V124L52 128Z"/><path d="M60 134L118 130V146L62 148Z"/><ellipse cx="164" cy="160" rx="22" ry="27"/><ellipse cx="324" cy="156" rx="19" ry="24"/><path d="M10 184H390" stroke-dasharray="6 8" stroke-width="2"/>`,
+  dash:`<path d="M20 120C120 78 280 78 380 120V196H20Z"/><circle cx="130" cy="150" r="46"/><circle cx="130" cy="150" r="12"/><path d="M84 150H118M142 150H176M130 162V196"/><rect x="214" y="100" width="76" height="44" rx="6"/><path d="M300 160H360"/>`,
+  cluster:`<rect x="50" y="40" width="300" height="140" rx="34"/><circle cx="135" cy="110" r="48"/><circle cx="265" cy="110" r="48"/><path d="M135 110L110 84M265 110L290 92"/><rect x="176" y="128" width="48" height="22" rx="4"/>`,
+  seats:`<path d="M60 150L82 64Q200 50 318 64L340 150Z"/><path d="M160 58L156 150M240 58L244 150"/><path d="M46 150H354V184H46Z"/>`,
+  trunk:`<path d="M66 70H334L354 180H46Z"/><path d="M84 152H316"/><path d="M96 34H304L334 70M96 34L66 70"/>`,
+  engine:`<path d="M60 76L200 22L340 76"/><path d="M48 92H352L330 186H70Z"/><rect x="140" y="112" width="120" height="50" rx="6"/><circle cx="96" cy="130" r="16"/><rect x="286" y="116" width="40" height="30" rx="4"/>`,
+  wheel:`<circle cx="200" cy="110" r="88"/><circle cx="200" cy="110" r="58"/><circle cx="200" cy="110" r="12"/><path d="M200 98V52M211 106L255 92M207 120L234 158M193 120L166 158M189 106L145 92"/>`
+};
+function svg(kind, mirror){
+  return `<svg viewBox="0 0 400 200" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${mirror?'<g transform="matrix(-1 0 0 1 400 0)">':'<g>'}${SV[kind]}</g></svg>`;
+}
+
+/* ---------- ракурсы ---------- */
+const SHOTS = [
+  {id:'f34l',g:'ext',n:'Спереди 3/4 слева',k:'q',m:false,file:'front-34-left',tip:'Встаньте у левого переднего угла в 4–5 шагах. Телефон горизонтально, на уровне фар. Поверните колёса так, чтобы диск смотрел в камеру. Обычно это обложка.'},
+  {id:'front',g:'ext',n:'Спереди',k:'front',m:false,file:'front',tip:'Строго по центру, 3–4 шага. Телефон на уровне фар, без наклона.'},
+  {id:'f34r',g:'ext',n:'Спереди 3/4 справа',k:'q',m:true,file:'front-34-right',tip:'Правый передний угол, 4–5 шагов, телефон на уровне фар.'},
+  {id:'sider',g:'ext',n:'Правый бок',k:'side',m:true,file:'side-right',tip:'Напротив середины машины, 5–6 шагов, чтобы машина влезла с запасом по краям. Телефон на уровне дверных ручек.'},
+  {id:'r34r',g:'ext',n:'Сзади 3/4 справа',k:'q',m:false,file:'rear-34-right',tip:'Правый задний угол, 4–5 шагов, телефон на уровне фонарей.'},
+  {id:'rear',g:'ext',n:'Сзади',k:'rear',m:false,file:'rear',tip:'Строго по центру сзади, 3–4 шага, телефон на уровне фонарей.'},
+  {id:'r34l',g:'ext',n:'Сзади 3/4 слева',k:'q',m:true,file:'rear-34-left',tip:'Левый задний угол, 4–5 шагов, телефон на уровне фонарей.'},
+  {id:'sidel',g:'ext',n:'Левый бок',k:'side',m:false,file:'side-left',tip:'Напротив середины левого борта, 5–6 шагов, телефон на уровне дверных ручек.'},
+  {id:'dash',g:'int',n:'Салон спереди',k:'dash',m:false,file:'interior-front',tip:'С заднего сиденья по центру или из открытой водительской двери. Должны быть видны руль, панель и экран.'},
+  {id:'cluster',g:'int',n:'Приборка и пробег',k:'cluster',m:false,file:'dashboard',tip:'Заведите двигатель: пробег виден, ошибки не горят. Снимайте прямо, чтобы не было бликов.'},
+  {id:'seats',g:'int',n:'Задний ряд',k:'seats',m:false,file:'rear-seats',tip:'Из открытой задней двери. Уберите вещи и детское кресло, если оно не продаётся с машиной.'},
+  {id:'trunk',g:'int',n:'Багажник',k:'trunk',m:false,file:'trunk',tip:'Пустой багажник, коврик на месте. Снимайте сверху и чуть сзади.'},
+  {id:'engine',g:'int',n:'Под капотом',k:'engine',m:false,file:'engine',tip:'Капот открыт, снимайте сверху спереди. Мыть мотор специально не нужно.'},
+  {id:'wheel',g:'int',n:'Колесо и резина',k:'wheel',m:false,file:'wheel',tip:'Присядьте до уровня ступицы. Видно диск и протектор.'}
+];
+const PLATE_SHOTS = new Set(['f34l','front','f34r','r34r','rear','r34l']);
+const byId = Object.fromEntries(SHOTS.map(s=>[s.id,s]));
+
+/* ---------- состояние ---------- */
+const state = { photos:{}, cover:null, style:'natural', seriesWB:true, plateAll:'blur', platform:'avito', view:'shoot', current:null, guideOn:true };
+const $ = s => document.querySelector(s);
+const caps = {};
+function cap(name){
+  if(!(name in caps)) caps[name] = (window.claude && window.claude.use) ? window.claude.use(name).catch(()=>null) : Promise.resolve(null);
+  return caps[name];
+}
+function toast(msg, ms=2600){ const t=$('#toast'); t.textContent=msg; t.hidden=false; clearTimeout(toast._t); toast._t=setTimeout(()=>t.hidden=true, ms); }
+
+/* ---------- навигация ---------- */
+function go(v){
+  state.view=v;
+  for(const k of ['car','shoot','photos','text']) $('#v-'+k).hidden = k!==v;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-current', b.dataset.go===v));
+  if(v==='photos') renderList();
+  window.scrollTo(0,0);
+  try{ localStorage.setItem('ak_view', v) }catch(e){}
+}
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.go)));
+
+/* ---------- форма машины ---------- */
+const FLAGS = ['Сервисная книжка','Не битая','Родная краска','Два комплекта резины','Гаражное хранение','Не курили в салоне','Два ключа','ПТС оригинал','Обслуживалась у дилера','Вложений не требует'];
+const EXAMPLE = {make:'Kia',model:'Rio',year:'2019',km:'87400',engine:'1.6 бензин, 123 л.с.',gear:'Автомат',drive:'Передний',body:'Седан',color:'Белый',owners:'1',price:'1290000',city:'Казань',bargain:'Небольшой торг у машины',
+  flags:['Сервисная книжка','Два комплекта резины','Не курили в салоне','Два ключа'],
+  story:'Брал новой в салоне в 2019, езжу сам, в основном по городу и на дачу летом. ТО делал у дилера до 60 тысяч, дальше в своем сервисе, масло каждые 10. В прошлом году поменял аккумулятор и передние колодки. Зимой заводится без проблем. Продаю, потому что взял машину побольше, семья выросла.',
+  issues:'Скол на капоте, царапина на заднем бампере справа (парковка). Отполировать не стал.'};
+const FIELDS=['make','model','year','km','engine','gear','drive','body','color','owners','price','city','bargain','story','issues'];
+$('#c_flags').innerHTML = FLAGS.map((f,i)=>`<label class="chip"><input type="checkbox" id="fl${i}" value="${f}"> ${f}</label>`).join('');
+function readCar(){
+  const o={}; FIELDS.forEach(k=>o[k]=$('#c_'+k).value.trim());
+  o.flags=[...document.querySelectorAll('#c_flags input:checked')].map(i=>i.value); return o;
+}
+function fillCar(o){ FIELDS.forEach(k=>{ if(o[k]!=null) $('#c_'+k).value=o[k] }); document.querySelectorAll('#c_flags input').forEach(i=>i.checked=(o.flags||[]).includes(i.value)); }
+let saved=null; try{ saved=JSON.parse(localStorage.getItem('ak_car')||'null') }catch(e){}
+fillCar(saved||EXAMPLE); $('#exampleFlag').hidden=!!saved;
+document.querySelector('#v-car').addEventListener('input',()=>{ $('#exampleFlag').hidden=true; try{ localStorage.setItem('ak_car',JSON.stringify(readCar())) }catch(e){} });
+
+/* ---------- сетка ракурсов ---------- */
+function renderGrid(){
+  for(const g of ['ext','int']){
+    $('#g_'+g).innerHTML = SHOTS.filter(s=>s.g===g).map(s=>{
+      const p=state.photos[s.id], i=SHOTS.indexOf(s)+1;
+      const warn = p && p.checks.some(c=>c.lvl!=='ok');
+      return `<button class="shot ${p?'done':''}" data-shot="${s.id}">
+        <div class="pic">${svg(s.k,s.m)}${p?`<img src="${p.thumb||''}" alt="">`:''}${state.cover===s.id&&p?'<span class="badge">ОБЛОЖКА</span>':''}${warn?'<span class="flag" title="Есть замечания"></span>':''}</div>
+        <div class="cap"><span class="num">${p?'✓':i}</span><span class="nm">${s.n}</span></div></button>`;
+    }).join('');
+  }
+  const n=Object.keys(state.photos).length;
+  $('#prog').innerHTML=`<b>${n}</b> из ${SHOTS.length} кадров`;
+}
+document.querySelector('#v-shoot').addEventListener('click',e=>{ const b=e.target.closest('[data-shot]'); if(b) openShot(b.dataset.shot); });
+$('#nextShot').addEventListener('click',()=>{ const s=SHOTS.find(s=>!state.photos[s.id]); if(s) openShot(s.id); else toast('Все ракурсы сняты. Переходите к обработке.'); });
+
+/* ---------- экран ракурса ---------- */
+function openShot(id){
+  state.current=id; const s=byId[id];
+  $('#shotTitle').textContent=`${SHOTS.indexOf(s)+1}. ${s.n}`;
+  $('#shotTip').textContent=s.tip;
+  $('#shotGuide').innerHTML=svg(s.k,s.m);
+  showShotState(); $('#shotSheet').hidden=false;
+}
+function showShotState(){
+  const p=state.photos[state.current], fr=$('#shotFrame');
+  fr.querySelectorAll('img').forEach(i=>i.remove());
+  fr.classList.toggle('empty',!p);
+  if(p){ const img=new Image(); img.src=p.preview; img.alt=''; fr.prepend(img); }
+  $('#shotGuide').hidden = p ? !state.guideOn : false;
+  $('#toggleGuide').textContent = 'Силуэт: '+(state.guideOn?'вкл':'выкл');
+  $('#shotBefore').hidden=!!p; $('#shotAfter').hidden=!p;
+  const qc=$('#shotQC'); qc.hidden=!p;
+  if(p){ const col={ok:'var(--ok)',warn:'var(--warn)',bad:'var(--bad)'};
+    qc.innerHTML=p.checks.map(c=>`<div><span class="d" style="background:${col[c.lvl]}"></span><span>${c.t}</span></div>`).join(''); }
+  const last = SHOTS.findIndex(s=>s.id===state.current)===SHOTS.length-1;
+  $('#shotNext').textContent = nextEmpty() ? 'Следующий ракурс' : 'Готово';
+}
+function nextEmpty(){ const i=SHOTS.findIndex(s=>s.id===state.current); return SHOTS.slice(i+1).concat(SHOTS.slice(0,i)).find(s=>!state.photos[s.id]); }
+$('#shotClose').addEventListener('click',()=>{ $('#shotSheet').hidden=true; renderGrid(); });
+$('#toggleGuide').addEventListener('click',()=>{ state.guideOn=!state.guideOn; showShotState(); });
+$('#shotNext').addEventListener('click',()=>{ const n=nextEmpty(); if(n) openShot(n.id); else { $('#shotSheet').hidden=true; renderGrid(); go('photos'); } });
+for(const sel of ['#camIn','#galIn','#camIn2']) $(sel).addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  await addPhoto(state.current,f); showShotState();
+});
+$('#bulk').addEventListener('change',async e=>{
+  const files=[...e.target.files]; e.target.value=''; let n=0;
+  for(const f of files){ const s=SHOTS.find(s=>!state.photos[s.id]); if(!s) break; toast(`Загружаю ${++n} из ${files.length}…`, 60000); await addPhoto(s.id,f); renderGrid(); }
+  toast(n?`Загружено ${n}. Проверьте, что фото попали в свои ракурсы, и переснимите лишние.`:'Все ракурсы уже заполнены.', 4200);
+});
+
+/* ---------- загрузка и анализ ---------- */
+const MAXSIDE=2560;
+const mk=(w,h)=>{ const c=document.createElement('canvas'); c.width=w; c.height=h; return c; };
+function loadImg(blob){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(blob), i=new Image(); i.onload=()=>res(i); i.onerror=()=>rej(new Error('decode')); i.src=u; }); }
+function scaleTo(src,sw,sh,tw,th){
+  let cur=src,cw=sw,ch=sh;
+  while(cw/2>=tw && ch/2>=th){ const c=mk(Math.round(cw/2),Math.round(ch/2)); const x=c.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(cur,0,0,c.width,c.height); cur=c; cw=c.width; ch=c.height; }
+  const o=mk(tw,th), x=o.getContext('2d'); x.imageSmoothingQuality='high'; x.drawImage(cur,0,0,tw,th); return o;
+}
+const toBlob=(c,q=.92)=>new Promise(r=>c.toBlob(r,'image/jpeg',q));
+function fit(w,h,m){ const k=Math.min(1,m/Math.max(w,h)); return [Math.round(w*k),Math.round(h*k)]; }
+
+async function addPhoto(id,file){
+  let img; try{ img=await loadImg(file) }catch(e){ toast('Не получилось открыть фото. Попробуйте JPEG или снимите заново.'); return; }
+  const [W,H]=fit(img.naturalWidth,img.naturalHeight,MAXSIDE);
+  const base=scaleTo(img,img.naturalWidth,img.naturalHeight,W,H);
+  const stats=analyze(base,W,H);
+  const s=byId[id]; const checks=[];
+  if(stats.sharp<35) checks.push({lvl:'bad',t:'Похоже, кадр смазан. Переснимите, держите телефон двумя руками.'});
+  else checks.push({lvl:'ok',t:'Резкость в порядке'});
+  if(stats.clip>0.06) checks.push({lvl:'warn',t:'Есть пересвеченные места. Попробуйте зайти с другой стороны от солнца.'});
+  else if(stats.mean<0.2) checks.push({lvl:'warn',t:'Темновато. Обработка вытянет, но лучше снять при более ярком свете.'});
+  else checks.push({lvl:'ok',t:'Свет в порядке'});
+  if(s.g==='ext' && H>W) checks.push({lvl:'warn',t:'Снимайте горизонтально, так машина влезет целиком.'});
+  if(Math.max(img.naturalWidth,img.naturalHeight)<1280) checks.push({lvl:'warn',t:'Маленькое разрешение. Площадки покажут фото мыльным.'});
+  if(s.g==='ext') checks.push({lvl:'ok',t:'Сверьте машину с силуэтом: она целиком в кадре, есть запас по краям'});
+  const p = { id, base:await toBlob(base,.95), W, H, stats, checks, plate:null, plateMode:'none', style:null };
+  p.preview = URL.createObjectURL(p.base);
+  const old=state.photos[id]; if(old){ revoke(old) }
+  state.photos[id]=p;
+  if(!state.cover && s.g==='ext') state.cover=id;
+  if(!state.cover) state.cover=id;
+  await renderPhoto(p);
+  renderGrid();
+}
+function revoke(p){ for(const k of ['preview','url','thumb']) if(p[k]) URL.revokeObjectURL(p[k]); }
+
+function analyze(c,W,H){
+  const [w,h]=fit(W,H,320); const s=scaleTo(c,W,H,w,h); const d=s.getContext('2d').getImageData(0,0,w,h).data;
+  const hist=new Uint32Array(256); let sr=0,sg=0,sb=0,nn=0, ar=0,ag=0,ab=0, clip=0, sum=0; const n=w*h;
+  for(let i=0;i<d.length;i+=4){ const r=d[i],g=d[i+1],b=d[i+2]; const L=(0.2126*r+0.7152*g+0.0722*b)|0; hist[L]++; sum+=L; ar+=r;ag+=g;ab+=b;
+    if(r>250||g>250||b>250) clip++;
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b); if(L>45&&L<220&&(mx-mn)<0.22*mx){ sr+=r;sg+=g;sb+=b;nn++; } }
+  const pct=q=>{ let a=0,t=q*n; for(let i=0;i<256;i++){ a+=hist[i]; if(a>=t) return i/255 } return 1; };
+  let mr,mg,mb; if(nn>n*0.04){mr=sr/nn;mg=sg/nn;mb=sb/nn}else{mr=ar/n;mg=ag/n;mb=ab/n}
+  const avg=(mr+mg+mb)/3, cl=v=>Math.min(1.14,Math.max(0.88,v));
+  // резкость: дисперсия лапласиана на уменьшенной копии
+  const [lw,lh]=fit(W,H,640); const ls=scaleTo(c,W,H,lw,lh); const ld=ls.getContext('2d').getImageData(0,0,lw,lh).data;
+  const gr=new Float32Array(lw*lh); for(let i=0,j=0;j<gr.length;i+=4,j++) gr[j]=0.299*ld[i]+0.587*ld[i+1]+0.114*ld[i+2];
+  let m1=0,m2=0,cnt=0; for(let y=1;y<lh-1;y++) for(let x=1;x<lw-1;x++){ const j=y*lw+x; const v=4*gr[j]-gr[j-1]-gr[j+1]-gr[j-lw]-gr[j+lw]; m1+=v;m2+=v*v;cnt++; }
+  const sharp=m2/cnt-(m1/cnt)**2;
+  return { gains:[cl(avg/mr),cl(avg/mg),cl(avg/mb)], p005:pct(.005), p997:pct(.997), mean:sum/n/255, clip:clip/n, sharp };
+}
+
+/* ---------- обработка ---------- */
+const K={soft:.45,natural:.7,vivid:1};
+function seriesGains(){
+  const ex=SHOTS.filter(s=>s.g==='ext'&&state.photos[s.id]).map(s=>state.photos[s.id].stats.gains);
+  if(!ex.length) return null; return [0,1,2].map(c=>ex.reduce((a,g)=>a+g[c],0)/ex.length);
+}
+function blurred(src,W,H,f){
+  const [sw,sh]=[Math.max(2,Math.round(W/f)),Math.max(2,Math.round(H/f))];
+  const s=scaleTo(src,W,H,sw,sh); const u=mk(W,H), x=u.getContext('2d'); x.imageSmoothingEnabled=true; x.imageSmoothingQuality='high'; x.drawImage(s,0,0,W,H);
+  return x.getImageData(0,0,W,H).data;
+}
+async function process(p){
+  const k=K[p.style||state.style]; const s=byId[p.id];
+  const img=await loadImg(p.base); const W=p.W,H=p.H;
+  const c=mk(W,H), ctx=c.getContext('2d'); ctx.drawImage(img,0,0,W,H);
+  const id=ctx.getImageData(0,0,W,H), a=id.data;
+  const big=blurred(c,W,H,28), sm=blurred(c,W,H,2.4);
+  const st=p.stats; const g0=(state.seriesWB&&s.g==='ext'&&seriesGains())||st.gains;
+  const gains=g0.map(v=>1+(v-1)*Math.min(1,k*0.9));
+  const bp=st.p005*0.75*k, wp=1-(1-Math.min(1,Math.max(0.86,st.p997)))*k;
+  const lift=Math.max(0.04,Math.min(0.42,(0.44-st.mean)*1.1+0.12))*k;
+  const hl=(st.clip>0.02?0.18:0.07)*k, con=0.12*k;
+  const lut=[0,1,2].map(ch=>{ const L=new Uint8ClampedArray(256);
+    for(let i=0;i<256;i++){ let t=Math.min(1,i/255*gains[ch]); t=Math.max(0,(t-bp)/Math.max(.2,wp-bp)); t=Math.min(1,t);
+      t=t+lift*2.2*t*(1-t)*(1-t)-hl*2.2*t*t*(1-t);
+      const ss=t*t*(3-2*t); t=t+con*(ss-t);
+      L[i]=Math.round(t*255); } return L; });
+  const lc=0.32*k, sh=0.55*k, vib=0.22*k;
+  for(let i=0;i<a.length;i+=4){
+    const r0=a[i],g0_=a[i+1],b0=a[i+2];
+    const L=0.299*r0+0.587*g0_+0.114*b0, Lb=0.299*big[i]+0.587*big[i+1]+0.114*big[i+2], Ls=0.299*sm[i]+0.587*sm[i+1]+0.114*sm[i+2];
+    let det=lc*(L-Lb)+sh*(L-Ls); det=det>28?28:det<-28?-28:det;
+    let r=lut[0][r0]+det, g=lut[1][g0_]+det, b=lut[2][b0]+det;
+    const mx=Math.max(r,g,b), mn=Math.min(r,g,b);
+    if(mx>0){ const sat=(mx-mn)/mx, f=vib*(1-sat)*(1-sat), m=(r+g+b)/3; r=m+(r-m)*(1+f); g=m+(g-m)*(1+f); b=m+(b-m)*(1+f); }
+    a[i]=r; a[i+1]=g; a[i+2]=b;
+  }
+  ctx.putImageData(id,0,0);
+  return c;
+}
+function drawPlate(ctx,W,H,pl,mode){
+  const x=pl.x*W,y=pl.y*H,w=pl.w*W,h=pl.h*H; if(w<4||h<4) return;
+  if(mode==='blur'){
+    const tw=Math.max(3,Math.round(w/14)), th=Math.max(2,Math.round(h/14));
+    const t=mk(tw,th); t.getContext('2d').drawImage(ctx.canvas,x,y,w,h,0,0,tw,th);
+    ctx.save(); ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x,y,w,h,Math.min(w,h)*.18) : ctx.rect(x,y,w,h); ctx.clip();
+    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high'; ctx.drawImage(t,0,0,tw,th,x-2,y-2,w+4,h+4); ctx.restore();
+  } else {
+    const r=Math.min(w,h)*.16; ctx.save();
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x,y,w,h,r) : ctx.rect(x,y,w,h);
+    ctx.fillStyle='#F5F5F2'; ctx.fill(); ctx.lineWidth=Math.max(1.5,h*.06); ctx.strokeStyle='#1A1A1A'; ctx.stroke();
+    ctx.fillStyle='#1A1A1A'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    let fs=h*.5; ctx.font=`700 ${fs}px Unbounded, Onest, sans-serif`;
+    while(ctx.measureText('АВТОКАДР').width>w*.84 && fs>6){ fs-=1; ctx.font=`700 ${fs}px Unbounded, Onest, sans-serif`; }
+    ctx.fillText('АВТОКАДР',x+w/2,y+h/2+fs*.05); ctx.restore();
+  }
+}
+let queue=Promise.resolve();
+function renderPhoto(p){
+  queue = queue.then(async ()=>{
+    try{
+      const c=await process(p);
+      if(p.plate && p.plateMode!=='none') drawPlate(c.getContext('2d'),p.W,p.H,p.plate,p.plateMode);
+      const blob=await toBlob(c,.9);
+      const [tw,th]=fit(p.W,p.H,480); const tc=scaleTo(c,p.W,p.H,tw,th); const tb=await toBlob(tc,.82);
+      if(p.url) URL.revokeObjectURL(p.url); if(p.thumb) URL.revokeObjectURL(p.thumb);
+      p.out=blob; p.url=URL.createObjectURL(blob); p.thumb=URL.createObjectURL(tb);
+    }catch(e){ console.error(e); toast('Не хватило памяти на обработку. Закройте другие вкладки и попробуйте снова.'); }
+  });
+  return queue;
+}
+async function rerenderAll(){ for(const s of SHOTS){ const p=state.photos[s.id]; if(p) await renderPhoto(p); } }
+
+/* ---------- список фото ---------- */
+function ordered(){
+  const list=SHOTS.map(s=>s.id).filter(id=>state.photos[id]);
+  if(state.cover && list.includes(state.cover)){ list.splice(list.indexOf(state.cover),1); list.unshift(state.cover); }
+  return list;
+}
+function renderList(){
+  document.querySelectorAll('#styleSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===state.style));
+  document.querySelectorAll('#plateModeAll button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===state.plateAll));
+  const ids=ordered();
+  $('#exportCard').hidden=!ids.length;
+  if(!ids.length){ $('#plist').innerHTML=`<div class="empty"><p>Пока нет снимков. Снимите машину по ракурсам или загрузите готовые фото из галереи.</p><button class="btn primary" data-go2="shoot">К съёмке</button></div>`; return; }
+  $('#plist').innerHTML=ids.map((id,i)=>{ const p=state.photos[id], s=byId[id];
+    return `<button class="pitem" data-ed="${id}"><img src="${p.thumb||p.preview}" alt=""><div class="meta">
+      <span class="count">№ ${i+1}</span><strong style="font-weight:600">${s.n}</strong>
+      <div class="tags">${id===state.cover?'<span class="tag y">Обложка</span>':''}${p.plateMode!=='none'?'<span class="tag">Номер скрыт</span>':''}${p.style?`<span class="tag">${{soft:'Мягко',natural:'Естественно',vivid:'Ярче'}[p.style]}</span>`:''}${p.checks.some(c=>c.lvl==='bad')?'<span class="tag" style="color:var(--bad)">Смазано</span>':''}</div></div></button>`; }).join('');
+}
+$('#plist').addEventListener('click',e=>{ const b=e.target.closest('[data-ed]'); if(b) openEd(b.dataset.ed); const g=e.target.closest('[data-go2]'); if(g) go(g.dataset.go2); });
+$('#styleSeg').addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b) return; state.style=b.dataset.v; Object.values(state.photos).forEach(p=>p.style=null); renderList(); toast('Пересчитываю серию…',60000); await rerenderAll(); renderList(); renderGrid(); toast('Готово'); });
+$('#seriesWB').addEventListener('change',async e=>{ state.seriesWB=e.target.checked; toast('Пересчитываю серию…',60000); await rerenderAll(); renderList(); renderGrid(); toast('Готово'); });
+$('#plateModeAll').addEventListener('click',async e=>{ const b=e.target.closest('button'); if(!b) return; state.plateAll=b.dataset.v;
+  for(const p of Object.values(state.photos)) if(p.plate && p.plateMode!=='none'){ p.plateMode=state.plateAll; await renderPhoto(p); }
+  renderList(); renderGrid(); });
+
+/* ---------- поиск номера через Claude ---------- */
+async function findPlate(p){
+  const sample=await cap('sample'); if(!sample) throw {code:'unavailable'};
+  const src=await loadImg(p.base); const [w,h]=fit(p.W,p.H,1024); const blob=await toBlob(scaleTo(src,p.W,p.H,w,h),.85);
+  const r=await sample.json(`На фото автомобиль. Найди его государственный номерной знак.
+Верни только JSON без пояснений: {"found": true|false, "x": число, "y": число, "w": число, "h": число}
+x и y это левый верхний угол прямоугольника, w и h его ширина и высота, всё в долях от ширины и высоты изображения (от 0 до 1).
+Прямоугольник должен закрывать номер целиком, с небольшим запасом. Если номер не виден или его нет, верни {"found": false}.`,{images:[blob],modelTier:'default'});
+  if(!r || !r.found || !(r.w>0&&r.h>0)) return null;
+  const px=r.w*0.12, py=r.h*0.2;
+  return {x:Math.max(0,r.x-px),y:Math.max(0,r.y-py),w:Math.min(1,r.w+2*px),h:Math.min(1,r.h+2*py)};
+}
+function sampleErr(e){ const c=e&&e.code;
+  return c==='not_granted'?'Без разрешения на Claude поиск номера и текст не работают. Номер можно отметить вручную.'
+   :c==='rate_limited'?'Слишком много запросов подряд. Подождите минуту.'
+   :c==='unavailable'||c==='images_unavailable'?'Автопоиск недоступен в этом окне. Отметьте номер вручную: коснитесь его на фото.'
+   :'Не получилось. Попробуйте ещё раз или отметьте вручную.'; }
+$('#platesAll').addEventListener('click',async e=>{
+  const btn=e.currentTarget; const ids=ordered().filter(id=>PLATE_SHOTS.has(id)); if(!ids.length){ toast('Нет кадров, где виден номер.'); return; }
+  btn.disabled=true; let found=0;
+  try{ for(let i=0;i<ids.length;i++){ const p=state.photos[ids[i]]; btn.textContent=`Ищу номер ${i+1} из ${ids.length}…`;
+      const pl=await findPlate(p); if(pl){ p.plate=pl; p.plateMode=state.plateAll; found++; await renderPhoto(p); renderList(); } }
+    toast(found?`Номер скрыт на ${found} фото. Проверьте каждое в редакторе.`:'Номер не найден. Отметьте вручную в редакторе.',4200);
+  }catch(err){ toast(sampleErr(err),4500); }
+  btn.disabled=false; btn.textContent='Найти и скрыть номера'; renderGrid();
+});
+
+/* ---------- редактор ---------- */
+let ed=null;
+function openEd(id){ ed=state.photos[id]; $('#edTitle').textContent=byId[id].n; $('#edSheet').hidden=false; syncEd(); }
+function syncEd(){
+  const p=ed; $('#edImg').src=p.url||p.preview;
+  const fr=$('#edFrame'); fr.style.aspectRatio=`${p.W}/${p.H}`; fr.style.width=`min(100%, calc((100dvh - 330px) * ${p.W/p.H}))`;
+  document.querySelectorAll('#edStyle button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===(p.style||state.style)));
+  document.querySelectorAll('#edPlate button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===p.plateMode));
+  $('#edCover').textContent = state.cover===p.id?'Это обложка':'Сделать обложкой'; $('#edCover').disabled = state.cover===p.id;
+  drawBox();
+  $('#edHint').textContent = p.plateMode==='none' ? 'Чтобы скрыть номер, выберите «Размыть» или «Плашка», затем коснитесь номера на фото.' : 'Перетащите рамку на номер, жёлтый кружок меняет размер. Чтобы сохранить фото, нажмите на него и удерживайте.';
+}
+function drawBox(){
+  const L=$('#plateLayer'), p=ed; L.hidden = p.plateMode==='none'; L.innerHTML='';
+  if(p.plateMode==='none'||!p.plate) return;
+  const b=document.createElement('div'); b.className='platebox';
+  Object.assign(b.style,{left:p.plate.x*100+'%',top:p.plate.y*100+'%',width:p.plate.w*100+'%',height:p.plate.h*100+'%'});
+  b.innerHTML='<span class="h"></span>'; L.appendChild(b);
+}
+async function edRender(){ $('#edBusy').hidden=false; await renderPhoto(ed); $('#edBusy').hidden=true; syncEd(); renderList(); renderGrid(); }
+$('#edClose').addEventListener('click',()=>{ $('#edSheet').hidden=true; ed=null; renderList(); });
+$('#edStyle').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; ed.style=b.dataset.v===state.style?null:b.dataset.v; edRender(); });
+$('#edPlate').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; ed.plateMode=b.dataset.v; if(b.dataset.v!=='none') state.plateAll=b.dataset.v; syncEd(); if(ed.plate) edRender(); });
+$('#edCover').addEventListener('click',()=>{ state.cover=ed.id; syncEd(); renderList(); renderGrid(); toast('Это фото будет первым'); });
+$('#edFind').addEventListener('click',async e=>{ const btn=e.currentTarget; btn.disabled=true; btn.textContent='Ищу…';
+  try{ const pl=await findPlate(ed); if(pl){ ed.plate=pl; if(ed.plateMode==='none') ed.plateMode=state.plateAll; await edRender(); toast('Нашёл. Проверьте рамку.'); } else toast('Номер не найден. Коснитесь его на фото.'); }
+  catch(err){ toast(sampleErr(err),4500); }
+  btn.disabled=false; btn.textContent='Найти номер'; });
+const orig=$('#edOrig');
+const showOrig=v=>{ if(ed) $('#edImg').src = v ? ed.preview : (ed.url||ed.preview); orig.textContent = v?'Обработка':'Оригинал'; };
+orig.addEventListener('pointerdown',()=>showOrig(true)); for(const ev of ['pointerup','pointerleave','pointercancel']) orig.addEventListener(ev,()=>showOrig(false));
+// рамка номера: коснуться — поставить, тянуть — двигать, кружок — размер
+(()=>{ const L=$('#plateLayer'); let drag=null;
+  const rel=e=>{ const r=L.getBoundingClientRect(); return [(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]; };
+  L.addEventListener('pointerdown',e=>{ if(!ed) return; e.preventDefault(); const [x,y]=rel(e);
+    if(e.target.classList.contains('h')) drag={mode:'size',x,y,pl:{...ed.plate}};
+    else if(e.target.classList.contains('platebox')) drag={mode:'move',x,y,pl:{...ed.plate}};
+    else { const ar=ed.W/ed.H, w=0.2, h=Math.min(.3,w*ar/4.6); ed.plate={x:Math.max(0,x-w/2),y:Math.max(0,y-h/2),w,h}; drawBox(); drag={mode:'move',x,y,pl:{...ed.plate}}; }
+    L.setPointerCapture(e.pointerId); });
+  L.addEventListener('pointermove',e=>{ if(!drag) return; const [x,y]=rel(e), dx=x-drag.x, dy=y-drag.y, p=drag.pl;
+    ed.plate = drag.mode==='move' ? {...p,x:Math.min(1-p.w,Math.max(0,p.x+dx)),y:Math.min(1-p.h,Math.max(0,p.y+dy))}
+                                  : {...p,w:Math.max(.03,Math.min(1-p.x,p.w+dx)),h:Math.max(.015,Math.min(1-p.y,p.h+dy))};
+    drawBox(); });
+  const end=()=>{ if(drag){ drag=null; edRender(); } };
+  L.addEventListener('pointerup',end); L.addEventListener('pointercancel',end);
+})();
+
+/* ---------- сохранение ---------- */
+const CRC=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+const crc32=u=>{ let c=0xFFFFFFFF; for(let i=0;i<u.length;i++) c=CRC[(c^u[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; };
+function zip(files){
+  const enc=new TextEncoder(), parts=[], cd=[]; let off=0;
+  for(const f of files){ const nm=enc.encode(f.name), crc=crc32(f.data), sz=f.data.length;
+    const lh=new DataView(new ArrayBuffer(30)); lh.setUint32(0,0x04034b50,true); lh.setUint16(4,20,true); lh.setUint16(6,0x0800,true); lh.setUint16(8,0,true); lh.setUint16(10,0,true); lh.setUint16(12,33,true); lh.setUint32(14,crc,true); lh.setUint32(18,sz,true); lh.setUint32(22,sz,true); lh.setUint16(26,nm.length,true); lh.setUint16(28,0,true);
+    parts.push(new Uint8Array(lh.buffer),nm,f.data);
+    const ch=new DataView(new ArrayBuffer(46)); ch.setUint32(0,0x02014b50,true); ch.setUint16(4,20,true); ch.setUint16(6,20,true); ch.setUint16(8,0x0800,true); ch.setUint16(10,0,true); ch.setUint16(12,0,true); ch.setUint16(14,33,true); ch.setUint32(16,crc,true); ch.setUint32(20,sz,true); ch.setUint32(24,sz,true); ch.setUint16(28,nm.length,true); ch.setUint32(42,off,true);
+    cd.push(new Uint8Array(ch.buffer),nm); off+=30+nm.length+sz; }
+  const cdSize=cd.reduce((a,u)=>a+u.length,0); const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true); end.setUint16(8,files.length,true); end.setUint16(10,files.length,true); end.setUint32(12,cdSize,true); end.setUint32(16,off,true);
+  return new Blob([...parts,...cd,new Uint8Array(end.buffer)],{type:'application/zip'});
+}
+function slug(){ const c=readCar(); const tr={а:'a',б:'b',в:'v',г:'g',д:'d',е:'e',ё:'e',ж:'zh',з:'z',и:'i',й:'y',к:'k',л:'l',м:'m',н:'n',о:'o',п:'p',р:'r',с:'s',т:'t',у:'u',ф:'f',х:'h',ц:'c',ч:'ch',ш:'sh',щ:'sch',ы:'y',э:'e',ю:'yu',я:'ya'};
+  return ([c.make,c.model,c.year].filter(Boolean).join('-').toLowerCase().replace(/[а-яё]/g,ch=>tr[ch]||'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''))||'car'; }
+function names(){ return ordered().map((id,i)=>({id,name:`${String(i+1).padStart(2,'0')}_${byId[id].file}.jpg`})); }
+async function getDl(){ const d=await cap('downloads'); if(!d) toast('Сохранение недоступно в этом окне. Нажмите на фото в редакторе и удерживайте, чтобы сохранить.',5000); return d; }
+const dlErr=e=>{ if(e&&e.code==='declined') return; toast(e&&e.code==='rate_limited'?'Подождите, предыдущее сохранение ещё не закрыто.':'Не получилось сохранить.'); };
+$('#saveZip').addEventListener('click',async ()=>{ const d=await getDl(); if(!d) return; await queue;
+  const files=[]; for(const f of names()){ files.push({name:f.name,data:new Uint8Array(await state.photos[f.id].out.arrayBuffer())}); }
+  try{ await d.save({filename:`avtokadr_${slug()}.zip`,data:zip(files)}); toast('Архив сохранён'); }catch(e){ dlErr(e) } });
+$('#saveEach').addEventListener('click',async ()=>{ const d=await getDl(); if(!d) return; await queue; let n=0;
+  for(const f of names()){ try{ await d.save({filename:f.name,data:state.photos[f.id].out}); n++; }catch(e){ dlErr(e); break; } }
+  if(n) toast(`Сохранено ${n}`); });
+
+/* ---------- текст ---------- */
+const PLAT={
+  avito:{n:'Авито',g:`Авито. Люди пишут просто и по делу, 5–9 коротких абзацев или строк без заголовков. Сначала главное: сколько владеете, как обслуживали. Потом что меняли, комплектация в двух словах, что отдаёте в комплекте, честно про нюансы, в конце условия: осмотр, торг, обмен. Объём 600–1100 знаков.`},
+  autoru:{n:'Авто.ру',g:`Авто.ру. Покупатели внимательнее к истории и документам. Тон спокойный, деловой, но без канцелярита. Факты: история владения, обслуживание с пробегами, что меняли, состояние кузова и салона, нюансы. Объём 500–900 знаков.`},
+  drom:{n:'Дром',g:`Дром. Тон разговорный, как на форуме у автомобилистов. Подробнее про технику: что и на каком пробеге меняли, расход, как ведёт себя зимой и на трассе. Уместны мелкие личные детали. Объём 700–1300 знаков.`}
+};
+const BANNED=['идеальн','надёжный спутник','надежный спутник','не упустите','уникальн','станет отличным','порадует','комфорт и безопасност','безупречн','премиальн','эмоци','отличный вариант','идеально подойд','является','данный автомобиль','данного автомобиля','нового владельца','нового хозяина','не пожалеете','стоит отметить','важно отметить','откройте для себя','в заключение','для вашей семьи','настоящий','превосходн','непревзойд'];
+document.querySelectorAll('#platSeg button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===state.platform));
+const drafts={};
+$('#platSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; drafts[state.platform]=$('#out').value; state.platform=b.dataset.v;
+  document.querySelectorAll('#platSeg button').forEach(x=>x.setAttribute('aria-pressed',x===b)); $('#out').value=drafts[state.platform]||''; $('#regen').hidden=!$('#out').value; check(); });
+function prompt(c,extra=''){
+  const rub=c.price?Number(c.price.replace(/\D/g,'')).toLocaleString('ru-RU')+' ₽':'';
+  return `Напиши описание для объявления о продаже автомобиля частным владельцем на площадке ${PLAT[state.platform].n}.
+
+Данные о машине (пиши только то, что здесь есть, ничего не придумывай):
+- ${c.make} ${c.model}, ${c.year} год, ${c.body||''}, ${c.color||''}
+- Пробег: ${c.km?Number(c.km.replace(/\D/g,'')).toLocaleString('ru-RU')+' км':'не указан'}
+- Двигатель: ${c.engine||'не указан'}; коробка: ${c.gear}; привод: ${c.drive}
+- Владельцев по ПТС: ${c.owners||'не указано'}
+- Отметки продавца: ${c.flags.join(', ')||'нет'}
+- Цена: ${rub||'не указана'} (саму цену в тексте не пиши, она в отдельном поле). Торг: ${c.bargain}
+- Город: ${c.city||'не указан'}
+- Рассказ продавца своими словами: «${c.story||'нет'}»
+- Нюансы, которые продавец хочет назвать честно: «${c.issues||'нет'}»
+
+Площадка и тон: ${PLAT[state.platform].g}
+
+Как писать, чтобы текст звучал как от живого человека:
+- От первого лица, как будто продавец сам набирает с телефона. Простые слова, короткие предложения.
+- Бери формулировки из рассказа продавца, сохраняй его живые обороты. Не делай текст глаже, чем рассказ.
+- Используй обычный автомобильный язык частных объявлений: «ТО по регламенту», «вложений не требует», «по кузову», «торг у машины», «звоните, отвечу на вопросы».
+- Нюансы назови спокойно и прямо, отдельной строкой «По кузову:» или «Из минусов:».
+- Без восклицательных знаков, без эмодзи, без markdown, без заголовков и звёздочек. Списки только если очень надо, через дефис.
+- Не используй длинное тире, вместо него обычный дефис или запятая.
+- Запрещены рекламные штампы: идеальный, уникальный, надёжный спутник, не упустите, порадует, безупречный, премиальный, эмоции, отличный вариант, является, данный автомобиль, нового владельца, не пожалеете, стоит отметить.
+- Не начинай с «Продаю свой любимый» и не заканчивай призывом к действию в рекламном стиле.
+${extra}
+Выведи только текст объявления, без пояснений до и после.`;
+}
+function clean(t){ return t.replace(/\*\*/g,'').replace(/^#+\s*/gm,'').replace(/\s—\s/g,' - ').replace(/—/g,'-').replace(/!+/g,'.').replace(/\.\./g,'.').trim(); }
+function found(t){ const low=t.toLowerCase(); return BANNED.filter(b=>low.includes(b)); }
+function check(){
+  const t=$('#out').value; $('#count').textContent = t ? `${t.length} знаков` : '';
+  const f=found(t); const w=$('#warns');
+  w.innerHTML = f.length ? `<div class="warnline">Звучит как реклама или ИИ: ${f.map(x=>'«'+x+'…»').join(', ')}</div><button class="btn" id="fix" style="align-self:flex-start">Переписать эти места</button>` : '';
+}
+$('#out').addEventListener('input',check);
+let ctl=null;
+async function generate(extra, keep){
+  const sample=await cap('sample'); if(!sample){ $('#sampleNote').hidden=false; return; }
+  const c=readCar(); if(!c.make||!c.model){ toast('Заполните марку и модель на шаге «Машина».'); go('car'); return; }
+  ctl?.abort(); ctl=new AbortController();
+  const g=$('#gen'), r=$('#regen'); g.disabled=r.disabled=true; const prev=$('#out').value; $('#out').value='Пишу…'; $('#warns').innerHTML='';
+  try{
+    const input = keep ? `${prompt(c)}\n\nВот черновик:\n«${prev}»\n\n${extra}` : prompt(c,extra);
+    const {text}=await sample(input,{signal:ctl.signal,cache:false,onText:({text})=>{ $('#out').value=text; }});
+    $('#out').value=clean(text);
+  }catch(e){ $('#out').value=e&&e.text?clean(e.text):prev; if(e&&e.code!=='cancelled') toast(sampleErr(e),4500); }
+  g.disabled=r.disabled=false; r.hidden=!$('#out').value; drafts[state.platform]=$('#out').value; check();
+}
+$('#gen').addEventListener('click',()=>generate(''));
+$('#regen').addEventListener('click',()=>generate('Сделай другой вариант: другое начало, другой порядок абзацев, другие формулировки.'));
+$('#warns').addEventListener('click',e=>{ if(e.target.id==='fix') generate(`Перепиши этот черновик. Убери и замени простыми словами эти места: ${found($('#out').value).join(', ')}. Остальное оставь почти как есть.`, true); });
+$('#copy').addEventListener('click',()=>{ const t=$('#out').value; if(!t) return;
+  navigator.clipboard.writeText(t).then(()=>toast('Текст скопирован. Вставьте его в описание объявления.'),()=>{ $('#out').focus(); $('#out').select(); toast('Выделил текст, скопируйте вручную'); }); });
+cap('sample').then(s=>{ if(!s) $('#sampleNote').hidden=false; });
+
+/* ---------- старт ---------- */
+renderGrid();
+let v='shoot'; try{ v=localStorage.getItem('ak_view')||'shoot' }catch(e){}
+go(['car','shoot','photos','text'].includes(v)?v:'shoot');
+})();
+</script>
